@@ -6,10 +6,10 @@ An intelligent legal consultation chatbot powered by AI that helps users ask que
 
 - **Interactive Chat Interface**: Natural conversation flow for asking legal questions
 - **Supreme Court Judgment Analysis**: Specialized in analyzing Supreme Court cases (Workstream 2 Pilot)
-- **Real-time Processing**: Instant responses powered by AI backend
+- **Real-time AI Processing**: Instant responses powered by OpenAI GPT-4o-mini
 - **Chat History**: Maintains conversation context throughout the session
 - **User-Friendly UI**: Clean, intuitive interface built with Streamlit
-- **N8N Integration**: Seamless backend integration for AI processing
+- **Cloud-Ready**: Direct OpenAI integration works seamlessly on Streamlit Cloud
 
 ## 🚀 Quick Start
 
@@ -17,7 +17,7 @@ An intelligent legal consultation chatbot powered by AI that helps users ask que
 
 - Python 3.8 or higher
 - pip (Python package manager)
-- N8N workflow automation tool (for backend)
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
 
 ### Installation
 
@@ -32,11 +32,11 @@ An intelligent legal consultation chatbot powered by AI that helps users ask que
    pip install -r requirements.txt
    ```
 
-3. **Configure the N8N webhook**
+3. **Configure your OpenAI API key**
    
-   Open `app.py` and update the webhook URL:
-   ```python
-   N8N_WEBHOOK_URL = "your-n8n-webhook-url-here"
+   Open `.streamlit/secrets.toml` and add your API key:
+   ```toml
+   OPENAI_API_KEY = "sk-your-actual-api-key-here"
    ```
 
 4. **Run the application**
@@ -53,17 +53,26 @@ An intelligent legal consultation chatbot powered by AI that helps users ask que
 
 ## 📋 Configuration
 
-### N8N Webhook Setup
+### OpenAI API Key Setup
 
-The application requires an N8N webhook endpoint to process legal queries. Configure your N8N workflow to:
+The application uses OpenAI's API directly for AI-powered legal consultation. You need to configure your API key:
 
-1. Accept POST requests with JSON payload: `{"chatInput": "user question"}`
-2. Process the query through your AI/legal database
-3. Return JSON response: `{"answer": "AI response"}`
+**For Local Development:**
 
-**Default webhook URL**: `http://localhost:5678/webhook-test/consultant-bot`
+1. Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Open `.streamlit/secrets.toml`
+3. Replace `your-openai-api-key-here` with your actual API key
 
-Update this in `app.py` line 6 to match your N8N instance.
+**For Streamlit Cloud Deployment:**
+
+1. Go to your app dashboard on [Streamlit Cloud](https://share.streamlit.io/)
+2. Click on your app settings (⚙️)
+3. Navigate to "Secrets" section
+4. Add the following:
+   ```toml
+   OPENAI_API_KEY = "your-openai-api-key-here"
+   ```
+5. Save and your app will automatically restart with the new configuration
 
 ## 💡 Usage
 
@@ -82,18 +91,20 @@ Update this in `app.py` line 6 to match your N8N instance.
 ## 🛠️ Technical Stack
 
 - **Frontend**: Streamlit (Python web framework)
-- **Backend Integration**: N8N webhook
-- **HTTP Client**: Requests library
-- **Language**: Python 3.x
+- **AI Integration**: OpenAI API (GPT-4o-mini)
+- **Language**: Python 3.8+
 
 ## 📁 Project Structure
 
 ```
 legal-consultant-ai-main/
-├── app.py                 # Main Streamlit application
-├── requirements.txt       # Python dependencies
-├── README.md             # Project documentation
-└── .devcontainer/        # Development container configuration
+├── app.py                      # Main Streamlit application
+├── requirements.txt            # Python dependencies
+├── README.md                   # Project documentation
+├── .streamlit/
+│   └── secrets.toml           # API keys and secrets (local only)
+├── .gitignore                 # Git ignore rules
+└── .devcontainer/             # Development container configuration
 ```
 
 ## 🔧 Development
@@ -104,70 +115,93 @@ legal-consultant-ai-main/
 # Install dependencies
 pip install -r requirements.txt
 
+# Configure your API key in .streamlit/secrets.toml
+
 # Run in development mode
 streamlit run app.py
 ```
 
 ### Environment Variables
 
-For production deployment, consider using environment variables for sensitive configuration:
+The app supports configuration via Streamlit secrets or environment variables:
 
 ```python
-import os
-N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "http://localhost:5678/webhook-test/consultant-bot")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")  # Your OpenAI API key
 ```
 
 ## 🚢 Deployment
 
-### Streamlit Cloud
+### Streamlit Cloud (Recommended)
 
-1. Push your code to GitHub
-2. Connect your repository to Streamlit Cloud
-3. Set environment variables in Streamlit Cloud dashboard
-4. Deploy!
+1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Updated to use OpenAI direct integration"
+   git push origin main
+   ```
 
-### Vercel/Other Platforms
+2. **Deploy to Streamlit Cloud**
+   - Go to [share.streamlit.io](https://share.streamlit.io/)
+   - Click "New app"
+   - Select your repository and branch
+   - Set main file path: `app.py`
 
-The application can be deployed to any platform that supports Python and Streamlit applications.
+3. **Configure Secrets**
+   - In your app settings, go to "Secrets"
+   - Add your OpenAI API key:
+     ```toml
+     OPENAI_API_KEY = "sk-your-actual-api-key-here"
+     ```
+
+4. **Deploy!** Your app will be live at `https://your-app-name.streamlit.app`
+
+### Other Platforms
+
+The application can be deployed to any platform that supports Python and Streamlit applications (Heroku, Railway, etc.).
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-**Connection Error**
-- Ensure N8N is running and accessible
-- Verify the webhook URL is correct
-- Check network connectivity
+**"OpenAI API key not configured" Warning**
+- Ensure you've added `OPENAI_API_KEY` to `.streamlit/secrets.toml` (local)
+- Or added it to Streamlit Cloud secrets (cloud deployment)
+- Verify the API key is valid and has credits
 
-**No Response from AI**
-- Verify N8N workflow is active
-- Check webhook payload format
-- Review N8N logs for errors
+**"Error processing your query" Message**
+- Check your OpenAI API key is correct
+- Verify you have available API credits
+- Check your internet connection
+- Review error message for specific details
 
 **Module Not Found**
 - Run `pip install -r requirements.txt`
 - Ensure you're using Python 3.8+
+- Activate your virtual environment if using one
+
+**Rate Limit Errors**
+- OpenAI has rate limits based on your plan
+- Consider upgrading your OpenAI plan
+- Implement request throttling if needed
 
 ## 📝 API Reference
 
-### N8N Webhook Endpoint
+### Internal Function: `consultant_bot(user_query)`
 
-**Request**
-```json
-POST /webhook-test/consultant-bot
-Content-Type: application/json
+The application uses an internal function to process legal queries:
 
-{
-  "chatInput": "Your legal question here"
-}
-```
+**Input:**
+- `user_query` (string): The user's legal question
 
-**Response**
-```json
-{
-  "answer": "AI-generated response based on legal analysis"
-}
-```
+**Output:**
+- Returns AI-generated response based on OpenAI GPT-4o-mini
+
+**System Prompt:**
+The AI is configured as an expert legal consultant specializing in Supreme Court judgments and Indian law, providing:
+- Precise legal analysis
+- Relevant case law references
+- Professional legal insights
+- Clear explanations of complex concepts
 
 ## 🤝 Contributing
 
