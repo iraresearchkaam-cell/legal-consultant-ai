@@ -3,7 +3,7 @@ import requests
 
 # --- CONFIGURATION ---
 # Paste your N8N Production Webhook URL here
-N8N_WEBHOOK_URL = "https://akshita3012.app.n8n.cloud/webhook/consultant-bot"
+N8N_WEBHOOK_URL = "http://localhost:5678/webhook/consultant-bot"
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Legal Mind AI", page_icon="⚖️")
