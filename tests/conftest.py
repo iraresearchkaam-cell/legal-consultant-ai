@@ -1,69 +1,97 @@
-"""Pytest configuration and shared fixtures."""
+"""Pytest fixtures shared across the test suite."""
+
+from __future__ import annotations
+
+import json
+from unittest.mock import MagicMock
+
 import pytest
-import sys
-from unittest.mock import Mock, patch
-from pathlib import Path
 
-# Add parent directory to path to allow imports from app module
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import app
 
 
-@pytest.fixture
-def mock_streamlit():
-    """Mock streamlit module for testing."""
-    with patch("streamlit.set_page_config") as mock_config, \
-         patch("streamlit.title") as mock_title, \
-         patch("streamlit.markdown") as mock_markdown, \
-         patch("streamlit.chat_message") as mock_chat, \
-         patch("streamlit.chat_input") as mock_input, \
-         patch("streamlit.spinner") as mock_spinner, \
-         patch("streamlit.error") as mock_error, \
-         patch("streamlit.session_state", new_callable=lambda: Mock()) as mock_state:
-        
-        mock_spinner.return_value.__enter__ = Mock()
-        mock_spinner.return_value.__exit__ = Mock()
-        
-        yield {
-            "set_page_config": mock_config,
-            "title": mock_title,
-            "markdown": mock_markdown,
-            "chat_message": mock_chat,
-            "chat_input": mock_input,
-            "spinner": mock_spinner,
-            "error": mock_error,
-            "session_state": mock_state,
-        }
+class SessionState(dict):
+    """Dictionary-backed session state with attribute access."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 @pytest.fixture
-def mock_requests():
-    """Mock requests module for testing."""
-    with patch("requests.post") as mock_post:
-        yield mock_post
+def streamlit_mocks(monkeypatch):
+    """Patch Streamlit entry points used by the application."""
+    session_state = SessionState()
+    set_page_config = MagicMock()
+    title = MagicMock()
+    markdown = MagicMock()
+    error = MagicMock()
+    chat_input = MagicMock(return_value=None)
 
+    chat_context = MagicMock()
+    chat_context.__enter__.return_value = None
+    chat_context.__exit__.return_value = None
+    chat_context.markdown = MagicMock()
+    chat_message = MagicMock(return_value=chat_context)
 
-@pytest.fixture
-def sample_responses():
-    """Provide sample API responses for testing."""
+    spinner_context = MagicMock()
+    spinner_context.__enter__.return_value = None
+    spinner_context.__exit__.return_value = None
+    spinner = MagicMock(return_value=spinner_context)
+
+    monkeypatch.setattr(app.st, "session_state", session_state)
+    monkeypatch.setattr(app.st, "set_page_config", set_page_config)
+    monkeypatch.setattr(app.st, "title", title)
+    monkeypatch.setattr(app.st, "markdown", markdown)
+    monkeypatch.setattr(app.st, "error", error)
+    monkeypatch.setattr(app.st, "chat_input", chat_input)
+    monkeypatch.setattr(app.st, "chat_message", chat_message)
+    monkeypatch.setattr(app.st, "spinner", spinner)
+
     return {
-        "success": {
-            "status_code": 200,
-            "json_return": {"answer": "A railway penalty can be imposed within the specified statutory period."}
-        },
-        "no_answer_field": {
-            "status_code": 200,
-            "json_return": {"data": "Some data without answer field"}
-        },
-        "server_error": {
-            "status_code": 500,
-            "text": "Internal Server Error"
-        },
-        "not_found": {
-            "status_code": 404,
-            "text": "Not Found"
-        },
-        "bad_request": {
-            "status_code": 400,
-            "text": "Bad Request"
-        }
+        "session_state": session_state,
+        "set_page_config": set_page_config,
+        "title": title,
+        "markdown": markdown,
+        "error": error,
+        "chat_input": chat_input,
+        "chat_message": chat_message,
+        "chat_context": chat_context,
+        "spinner": spinner,
     }
+
+
+@pytest.fixture
+def mock_post(monkeypatch):
+    """Patch the outgoing POST request used by the application."""
+    post = MagicMock()
+    monkeypatch.setattr(app.requests, "post", post)
+    return post
+
+
+@pytest.fixture
+def make_response():
+    """Create a lightweight response object for request tests."""
+
+    def _make_response(status_code=200, payload=None, text="", json_error=None):
+        response = MagicMock()
+        response.status_code = status_code
+        response.text = text
+        if json_error is not None:
+            response.json.side_effect = json_error
+        else:
+            response.json.return_value = payload or {}
+        return response
+
+    return _make_response
+
+
+@pytest.fixture
+def invalid_json_error():
+    """Provide a representative JSON decode failure."""
+    return json.JSONDecodeError("Expecting value", "not-json", 0)
